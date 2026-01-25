@@ -1,3 +1,1 @@
-pyTelegramBotAPI==4.14.0
-flask
-pytz
+worker: python bot.py
