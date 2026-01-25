@@ -1,73 +1,92 @@
 import telebot
-from datetime import datetime, timedelta
-import pytz
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from datetime import datetime, timedelta
 
 # ================= CONFIGURAÇÕES =================
 TOKEN = "8316037466:AAFin8vm0gZ-3GtysKHIg2kSSNp2znHPAUE"
 
-# 👉 SEU ID (usuário)
-CHAT_ID = 8523974497
+# ID DO GRUPO (CORRETO -100...)
+GROUP_ID = -1003690946411
 
-LINK_APOSTA_MAX = "https://v2.aviatorspy.com/apostamax"
+LINK_APOSTA_MAX = "https://apostamax.com"
 LINK_TIP_MINER = "https://tipminer.com"
 
-TZ = pytz.timezone("America/Sao_Paulo")
 bot = telebot.TeleBot(TOKEN, parse_mode="HTML")
 
 # ================= FUNÇÕES =================
-def calcular_zonas(hora_str):
-    base = datetime.strptime(hora_str, "%H:%M")
-    zonas = [
-        base + timedelta(minutes=7),
-        base + timedelta(minutes=10),
-        base + timedelta(minutes=26),
+def somar_minutos(hora_base, minutos):
+    h, m = map(int, hora_base.split(":"))
+    novo = datetime.now().replace(hour=h, minute=m) + timedelta(minutes=minutos)
+    return novo.strftime("%H:%M")
+
+def calcular_zonas(hora_rosa):
+    return [
+        somar_minutos(hora_rosa, 7),
+        somar_minutos(hora_rosa, 10),
+        somar_minutos(hora_rosa, 26)
     ]
-    return [z.strftime("%H:%M") for z in zonas]
 
-def criar_botoes():
-    kb = InlineKeyboardMarkup()
-    kb.add(
+def teclado(hora):
+    markup = InlineKeyboardMarkup()
+    markup.add(
         InlineKeyboardButton("🚀 Abrir Aposta Max", url=LINK_APOSTA_MAX),
-        InlineKeyboardButton("📊 Abrir Tip Miner", url=LINK_TIP_MINER)
+        InlineKeyboardButton(
+            "📊 Abrir Tip Miner",
+            url=f"{LINK_TIP_MINER}?hora={hora}"
+        )
     )
-    return kb
+    return markup
 
-# ================= HANDLER =================
-@bot.message_handler(func=lambda m: True)
-def receber_hora(msg):
-    texto = msg.text.strip()
+def enviar_sinal_grupo(hora_rosa):
+    zonas = calcular_zonas(hora_rosa)
+    agora = datetime.now().strftime("%H:%M")
 
-    # DEBUG (aparece nos logs do Railway)
-    print("Recebido:", texto)
+    mensagem = (
+        "🌹 <b>ROSA 10x+ DETECTADO</b>\n\n"
+        f"⏰ <b>Horário da rosa:</b> {hora_rosa}\n"
+        f"🧠 <b>Análise gerada:</b> {agora}\n\n"
+        "🎯 <b>ZONAS QUENTES:</b>\n"
+        f"🎯 {zonas[0]}\n"
+        f"🎯 {zonas[1]}\n"
+        f"🎯 {zonas[2]}\n\n"
+        "🇧🇷 Horário de Brasília"
+    )
 
-    # aceita somente HH:MM
-    if len(texto) == 5 and texto[2] == ":":
-        try:
-            datetime.strptime(texto, "%H:%M")
-        except:
-            return
+    bot.send_message(
+        chat_id=GROUP_ID,
+        text=mensagem,
+        reply_markup=teclado(hora_rosa)
+    )
 
-        zonas = calcular_zonas(texto)
-        agora = datetime.now(TZ).strftime("%H:%M")
+# ================= COMANDOS =================
+@bot.message_handler(commands=["start"])
+def start(msg):
+    bot.reply_to(
+        msg,
+        "🤖 <b>Radar Rosa Bot ATIVO</b>\n\n"
+        "Use o comando:\n"
+        "<code>/rosa 1852</code>\n\n"
+        "Formato: HHMM",
+    )
 
-        mensagem = (
-            "🌹 <b>ROSA 10x+ DETECTADO</b>\n\n"
-            f"⏰ <b>Horário da rosa:</b> {texto}\n"
-            f"🕒 <b>Análise gerada:</b> {agora}\n\n"
-            "🎯 <b>ZONAS QUENTES:</b>\n"
-            f"🎯 {zonas[0]}\n"
-            f"🎯 {zonas[1]}\n"
-            f"🎯 {zonas[2]}\n\n"
-            "⏱️ Horário de Brasília"
-        )
+@bot.message_handler(commands=["rosa"])
+def rosa_manual(msg):
+    try:
+        hora = msg.text.split()[1]
+        if len(hora) != 4:
+            raise ValueError
+        hora_formatada = f"{hora[:2]}:{hora[2:]}"
+        enviar_sinal_grupo(hora_formatada)
+        bot.reply_to(msg, "✅ Sinal enviado no grupo com sucesso.")
+    except:
+        bot.reply_to(msg, "❌ Use corretamente:\n/rosa 1852")
 
-        bot.send_message(
-            CHAT_ID,
-            mensagem,
-            reply_markup=criar_botoes()
-        )
+@bot.message_handler(commands=["teste"])
+def teste(msg):
+    agora = datetime.now().strftime("%H:%M")
+    enviar_sinal_grupo(agora)
+    bot.reply_to(msg, "🧪 Teste enviado no grupo.")
 
-# ================= START =================
-print("🤖 Radar Rosa Bot ONLINE e pronto para postar")
+# ================= START BOT =================
+print("🤖 Radar Rosa Bot ONLINE")
 bot.infinity_polling()
