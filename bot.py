@@ -44,7 +44,6 @@ def enviar_sinal_grupo(hora_rosa):
     mensagem = (
         "🌹 <b>ROSA 10x+ DETECTADO</b>\n\n"
         f"⏰ <b>Horário da rosa:</b> {hora_rosa}\n"
-        f"🧠 <b>Análise gerada:</b> {agora}\n\n"
         "🎯 <b>ZONAS QUENTES:</b>\n"
         f"🎯 {zonas[0]}\n"
         f"🎯 {zonas[1]}\n"
