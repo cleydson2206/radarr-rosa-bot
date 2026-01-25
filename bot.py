@@ -7,7 +7,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 # CONFIGURAÇÕES
 # =========================
 TOKEN = "8316037466:AAFin8vm0gZ-3GtysKHIg2kSSNp2znHPAUE"
-CHAT_ID = -1001234567890  # 👈 TROQUE PELO ID DO SEU GRUPO
+CHAT_ID = -8523974497  # 👈 TROQUE PELO ID DO SEU GRUPO
 
 LINK_APOSTA_MAX = "https://v2.aviatorspy.com/apostamax"
 LINK_TIP_MINER = "https://tipminer.com"
