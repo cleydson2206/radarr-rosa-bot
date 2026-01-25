@@ -1,10 +1,18 @@
 import telebot
 from datetime import datetime
+import pytz
 
-TOKEN = "8316037466:AAGEGHmlUlL31TwcFOWCoTtxZcbT9dodx-Y"
-
+# ===============================
+# TOKEN DO BOT (JÁ CONFIGURADO)
+# ===============================
+TOKEN = "8316037466:AAFin8vm0gZ-3GtysKHIg2kSSNp2znHPAUE"
 bot = telebot.TeleBot(TOKEN)
 
+TZ_BR = pytz.timezone("America/Sao_Paulo")
+
+# ===============================
+# FUNÇÕES AUXILIARES
+# ===============================
 def f(n):
     return f"{n:02d}"
 
@@ -12,50 +20,62 @@ def normalizar(h, m):
     while m >= 60:
         m -= 60
         h += 1
+    while m < 0:
+        m += 60
+        h -= 1
     if h >= 24:
         h %= 24
+    if h < 0:
+        h += 24
     return h, m
 
-@bot.message_handler(commands=['start'])
+# ===============================
+# COMANDO /start
+# ===============================
+@bot.message_handler(commands=["start"])
 def start(msg):
     bot.reply_to(
         msg,
-        "🌹 *Radar Rosa Bot ativo*\n\n"
+        "🎯 *Radar Rosa Bot ATIVO*\n\n"
         "Use o comando:\n"
         "`/rosa 2152`\n\n"
         "Formato: HHMM\n"
-        "Exemplo: /rosa 2152",
+        "Exemplo: `/rosa 2106`",
         parse_mode="Markdown"
     )
 
-@bot.message_handler(commands=['rosa'])
-def radar_rosa(msg):
+# ===============================
+# COMANDO /rosa
+# ===============================
+@bot.message_handler(commands=["rosa"])
+def rosa(msg):
     try:
-        valor = msg.text.split()[1]
-        if len(valor) != 4:
+        texto = msg.text.split()
+        if len(texto) != 2 or len(texto[1]) != 4:
             raise ValueError
 
-        h = int(valor[:2])
-        m = int(valor[2:])
+        hora = int(texto[1][:2])
+        minuto = int(texto[1][2:])
 
-        d = m // 10
-        u = m % 10
+        dezena = minuto // 10
+        unidade = minuto % 10
 
-        n1 = d + u
-        n2 = d * u
-        n3 = m // 2
+        n1 = dezena + unidade
+        n2 = dezena * unidade
+        n3 = minuto // 2
 
-        r1 = normalizar(h, m + n1)
-        r2 = normalizar(h, m + n2)
-        r3 = normalizar(h, m + n3)
+        h1, m1 = normalizar(hora, minuto + n1)
+        h2, m2 = normalizar(hora, minuto + n2)
+        h3, m3 = normalizar(hora, minuto + n3)
 
         resposta = (
-            "🎯 *ZONAS QUENTES – RADAR ROSA*\n\n"
-            f"⏱ {f(r1[0])}:{f(r1[1])}\n"
-            f"⏱ {f(r2[0])}:{f(r2[1])}\n"
-            f"⏱ {f(r3[0])}:{f(r3[1])}\n\n"
-            "⚠️ Use leitura de sequência\n"
-            "🌹 Caçador de Rosas"
+            "🌹 *RADAR ROSA – ZONAS QUENTES*\n\n"
+            f"⏰ Rosa base: `{f(hora)}:{f(minuto)}`\n\n"
+            "🎯 *Alvos calculados:*\n"
+            f"🎯 `{f(h1)}:{f(m1)}`\n"
+            f"🎯 `{f(h2)}:{f(m2)}`\n"
+            f"🎯 `{f(h3)}:{f(m3)}`\n\n"
+            "_Horário padrão de Brasília_"
         )
 
         bot.reply_to(msg, resposta, parse_mode="Markdown")
@@ -63,9 +83,14 @@ def radar_rosa(msg):
     except:
         bot.reply_to(
             msg,
-            "❌ Use o formato correto:\n"
+            "❌ Formato inválido.\n\n"
+            "Use assim:\n"
             "`/rosa 2152`",
             parse_mode="Markdown"
         )
 
+# ===============================
+# LOOP PRINCIPAL
+# ===============================
+print("🤖 Radar Rosa Bot iniciado...")
 bot.infinity_polling()
