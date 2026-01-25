@@ -3,11 +3,11 @@ from datetime import datetime, timedelta
 import pytz
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# =========================
-# CONFIGURAÇÕES
-# =========================
+# ================= CONFIGURAÇÕES =================
 TOKEN = "8316037466:AAFin8vm0gZ-3GtysKHIg2kSSNp2znHPAUE"
-CHAT_ID = -8523974497  # 👈 TROQUE PELO ID DO SEU GRUPO
+
+# 👉 SEU ID (usuário)
+CHAT_ID = 8523974497
 
 LINK_APOSTA_MAX = "https://v2.aviatorspy.com/apostamax"
 LINK_TIP_MINER = "https://tipminer.com"
@@ -15,9 +15,7 @@ LINK_TIP_MINER = "https://tipminer.com"
 TZ = pytz.timezone("America/Sao_Paulo")
 bot = telebot.TeleBot(TOKEN, parse_mode="HTML")
 
-# =========================
-# FUNÇÕES
-# =========================
+# ================= FUNÇÕES =================
 def calcular_zonas(hora_str):
     base = datetime.strptime(hora_str, "%H:%M")
     zonas = [
@@ -28,21 +26,22 @@ def calcular_zonas(hora_str):
     return [z.strftime("%H:%M") for z in zonas]
 
 def criar_botoes():
-    teclado = InlineKeyboardMarkup(row_width=2)
-    teclado.add(
+    kb = InlineKeyboardMarkup()
+    kb.add(
         InlineKeyboardButton("🚀 Abrir Aposta Max", url=LINK_APOSTA_MAX),
         InlineKeyboardButton("📊 Abrir Tip Miner", url=LINK_TIP_MINER)
     )
-    return teclado
+    return kb
 
-# =========================
-# RECEBER HORÁRIO (MANUAL)
-# =========================
+# ================= HANDLER =================
 @bot.message_handler(func=lambda m: True)
 def receber_hora(msg):
     texto = msg.text.strip()
 
-    # aceita apenas HH:MM
+    # DEBUG (aparece nos logs do Railway)
+    print("Recebido:", texto)
+
+    # aceita somente HH:MM
     if len(texto) == 5 and texto[2] == ":":
         try:
             datetime.strptime(texto, "%H:%M")
@@ -50,7 +49,6 @@ def receber_hora(msg):
             return
 
         zonas = calcular_zonas(texto)
-
         agora = datetime.now(TZ).strftime("%H:%M")
 
         mensagem = (
@@ -61,7 +59,6 @@ def receber_hora(msg):
             f"🎯 {zonas[0]}\n"
             f"🎯 {zonas[1]}\n"
             f"🎯 {zonas[2]}\n\n"
-            "⚠️ Aguarde confirmação de padrão\n"
             "⏱️ Horário de Brasília"
         )
 
@@ -71,8 +68,6 @@ def receber_hora(msg):
             reply_markup=criar_botoes()
         )
 
-# =========================
-# LOOP
-# =========================
-print("🤖 Radar Rosa Bot com botões ATIVO")
+# ================= START =================
+print("🤖 Radar Rosa Bot ONLINE e pronto para postar")
 bot.infinity_polling()
