@@ -1,96 +1,128 @@
 import telebot
-from datetime import datetime
+import time
+import threading
+import requests
+from datetime import datetime, timedelta
 import pytz
 
-# ===============================
-# TOKEN DO BOT (JÁ CONFIGURADO)
-# ===============================
+# =========================
+# CONFIGURAÇÕES
+# =========================
 TOKEN = "8316037466:AAFin8vm0gZ-3GtysKHIg2kSSNp2znHPAUE"
-bot = telebot.TeleBot(TOKEN)
+CHAT_ID = -1001234567890  # 👈 TROQUE PELO ID DO SEU GRUPO
+TIMEZONE = pytz.timezone("America/Sao_Paulo")
 
-TZ_BR = pytz.timezone("America/Sao_Paulo")
+bot = telebot.TeleBot(TOKEN, parse_mode="HTML")
 
-# ===============================
+# =========================
 # FUNÇÕES AUXILIARES
-# ===============================
-def f(n):
-    return f"{n:02d}"
+# =========================
+def hora_br():
+    return datetime.now(TIMEZONE)
 
-def normalizar(h, m):
-    while m >= 60:
-        m -= 60
-        h += 1
-    while m < 0:
-        m += 60
-        h -= 1
-    if h >= 24:
-        h %= 24
-    if h < 0:
-        h += 24
-    return h, m
+def formatar_hora(dt):
+    return dt.strftime("%H:%M")
 
-# ===============================
+def calcular_zonas(hora_base):
+    base = datetime.strptime(hora_base, "%H:%M")
+    zonas = [
+        base + timedelta(minutes=7),
+        base + timedelta(minutes=10),
+        base + timedelta(minutes=26),
+    ]
+    return [z.strftime("%H:%M") for z in zonas]
+
+# =========================
 # COMANDO /start
-# ===============================
+# =========================
 @bot.message_handler(commands=["start"])
 def start(msg):
-    bot.reply_to(
-        msg,
-        "🎯 *Radar Rosa Bot ATIVO*\n\n"
-        "Use o comando:\n"
-        "`/rosa 2152`\n\n"
-        "Formato: HHMM\n"
-        "Exemplo: `/rosa 2106`",
-        parse_mode="Markdown"
+    bot.send_message(
+        msg.chat.id,
+        "🎯 <b>Radar Rosa Bot ATIVO</b>\n\n"
+        "Use:\n"
+        "<code>/rosa HHMM</code>\n\n"
+        "Exemplo:\n"
+        "<code>/rosa 2152</code>"
     )
 
-# ===============================
-# COMANDO /rosa
-# ===============================
+# =========================
+# COMANDO MANUAL /rosa
+# =========================
 @bot.message_handler(commands=["rosa"])
-def rosa(msg):
+def rosa_manual(msg):
     try:
-        texto = msg.text.split()
-        if len(texto) != 2 or len(texto[1]) != 4:
-            raise ValueError
+        hora = msg.text.split()[1]
+        hora = f"{hora[:2]}:{hora[2:]}"
+        zonas = calcular_zonas(hora)
 
-        hora = int(texto[1][:2])
-        minuto = int(texto[1][2:])
-
-        dezena = minuto // 10
-        unidade = minuto % 10
-
-        n1 = dezena + unidade
-        n2 = dezena * unidade
-        n3 = minuto // 2
-
-        h1, m1 = normalizar(hora, minuto + n1)
-        h2, m2 = normalizar(hora, minuto + n2)
-        h3, m3 = normalizar(hora, minuto + n3)
-
-        resposta = (
-            "🌹 *RADAR ROSA – ZONAS QUENTES*\n\n"
-            f"⏰ Rosa base: `{f(hora)}:{f(minuto)}`\n\n"
-            "🎯 *Alvos calculados:*\n"
-            f"🎯 `{f(h1)}:{f(m1)}`\n"
-            f"🎯 `{f(h2)}:{f(m2)}`\n"
-            f"🎯 `{f(h3)}:{f(m3)}`\n\n"
-            "_Horário padrão de Brasília_"
+        texto = (
+            "🌹 <b>RADAR ROSA — ZONAS QUENTES</b>\n\n"
+            f"⏰ Rosa base: <b>{hora}</b>\n\n"
+            "🎯 <b>Alvos calculados:</b>\n"
+            f"• {zonas[0]}\n"
+            f"• {zonas[1]}\n"
+            f"• {zonas[2]}\n\n"
+            "🕒 Horário de Brasília"
         )
 
-        bot.reply_to(msg, resposta, parse_mode="Markdown")
+        bot.send_message(CHAT_ID, texto)
 
     except:
-        bot.reply_to(
-            msg,
-            "❌ Formato inválido.\n\n"
-            "Use assim:\n"
-            "`/rosa 2152`",
-            parse_mode="Markdown"
-        )
+        bot.reply_to(msg, "❌ Use corretamente: /rosa HHMM\nEx: /rosa 2152")
 
-# ===============================
+# =========================
+# 🔥 INTEGRAÇÃO TIP MINER
+# =========================
+def verificar_tip_miner():
+    """
+    AQUI você conecta a API / Webhook / Scraper do Tip Miner
+    Sempre que detectar um ROSA 10x+, chame enviar_sinal()
+    """
+
+    while True:
+        try:
+            # 🔁 EXEMPLO (SIMULADO)
+            # Substitua por API real do Tip Miner
+            resposta = requests.get("https://exemplo-tipminer-api.com/rosa")
+
+            if resposta.status_code == 200:
+                dados = resposta.json()
+
+                if dados.get("multiplicador", 0) >= 10:
+                    hora_rosa = dados["hora"]  # Ex: "21:52"
+                    enviar_sinal(hora_rosa)
+
+        except:
+            pass
+
+        time.sleep(30)  # checa a cada 30s
+
+# =========================
+# ENVIO AUTOMÁTICO NO GRUPO
+# =========================
+def enviar_sinal(hora_rosa):
+    zonas = calcular_zonas(hora_rosa)
+
+    texto = (
+        "🚨 <b>ROSA 10x+ DETECTADO (TIP MINER)</b>\n\n"
+        f"🌹 Rosa: <b>{hora_rosa}</b>\n\n"
+        "🔥 <b>ZONAS QUENTES:</b>\n"
+        f"🎯 {zonas[0]}\n"
+        f"🎯 {zonas[1]}\n"
+        f"🎯 {zonas[2]}\n\n"
+        "⏱️ Monitoramento automático"
+    )
+
+    bot.send_message(CHAT_ID, texto)
+
+# =========================
+# THREAD DO TIP MINER
+# =========================
+threading.Thread(target=verificar_tip_miner, daemon=True).start()
+
+# =========================
 # LOOP PRINCIPAL
-# ===============================
-print("🤖 Radar Rosa Bot iniciado...")
+# =========================
+print("🤖 Radar Rosa Bot ONLINE")
 bot.infinity_polling()
