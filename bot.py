@@ -44,6 +44,7 @@ def teclado(hora):
     )
     return markup
 
+# ================= MENSAGENS =================
 def enviar_sinal_grupo(hora_rosa):
     zonas = calcular_zonas(hora_rosa)
     horario_analise = agora_brasilia().strftime("%H:%M")
@@ -51,19 +52,14 @@ def enviar_sinal_grupo(hora_rosa):
     mensagem = (
         "🌹 <b>ROSA 10x+ DETECTADO</b>\n\n"
         f"⏰ <b>Horário da rosa:</b> {hora_rosa}\n\n"
-        "⚠️ <b>ATENÇÃO – LEIA COM CALMA</b>\n"
-        "As <b>ZONAS QUENTES</b> não são um minuto exato.\n"
-        "A rosa pode aparecer:\n\n"
-        "• 1 minuto <b>ANTES</b>\n"
-        "• <b>NO minuto</b> do sinal\n"
-        "• ou 1 minuto <b>DEPOIS</b>\n\n"
-        "👉 Prepare-se com antecedência e observe o fluxo.\n\n"
-        "🎯 <b>ZONAS QUENTES:</b>\n\n"
+        "⚠️ <b>ENTRAR 1 MINUTO ANTES</b>\n"
+        "⚠️ <b>OU 1 MINUTO DEPOIS</b>\n\n"
+        "🎯 <b>ZONAS QUENTES:</b>\n"
         f"🎯 {zonas[0]}\n"
         f"🎯 {zonas[1]}\n"
         f"🎯 {zonas[2]}\n\n"
-        "🚀 <b>ENTRAR NO MINUTO</b>\n"
-        "📊 Decisão sempre do usuário, com gestão de banca\n\n"
+        "🚀 <b>ENTRAR NO MINUTO</b>\n\n"
+        f"🧠 Análise gerada: {horario_analise}\n"
         "🇧🇷 Horário de Brasília"
     )
 
@@ -73,15 +69,37 @@ def enviar_sinal_grupo(hora_rosa):
         reply_markup=teclado(hora_rosa)
     )
 
+def enviar_recuperacao():
+    horario = agora_brasilia().strftime("%H:%M")
+
+    mensagem = (
+        "♻️ <b>PADRÃO DE RECUPERAÇÃO IDENTIFICADO</b>\n\n"
+        "📉 O Aviator passou por sequência de baixas\n"
+        "📈 Histórico indica <b>fase de recuperação</b>\n\n"
+        "⚠️ Evite entradas antecipadas\n"
+        "🎯 Priorize entradas estratégicas\n"
+        "🚀 Busque alvos controlados (2.00x+)\n\n"
+        f"🕒 Monitoramento ativo às {horario}\n"
+        "🇧🇷 Horário de Brasília"
+    )
+
+    bot.send_message(
+        chat_id=GROUP_ID,
+        text=mensagem,
+        reply_markup=teclado(horario)
+    )
+
 # ================= COMANDOS =================
 @bot.message_handler(commands=["start"])
 def start(msg):
     bot.reply_to(
         msg,
         "🤖 <b>Radar Rosa Bot ATIVO</b>\n\n"
-        "Use o comando:\n"
-        "<code>/rosa 1852</code>\n\n"
-        "Formato: HHMM",
+        "Comandos disponíveis:\n\n"
+        "🌹 <code>/rosa 1852</code>\n"
+        "♻️ <code>/recuperacao</code>\n\n"
+        "Formato do horário: HHMM\n"
+        "🇧🇷 Horário de Brasília"
     )
 
 @bot.message_handler(commands=["rosa"])
@@ -98,11 +116,10 @@ def rosa_manual(msg):
     except:
         bot.reply_to(msg, "❌ Use corretamente:\n/rosa 1852")
 
-@bot.message_handler(commands=["teste"])
-def teste(msg):
-    agora = agora_brasilia().strftime("%H:%M")
-    enviar_sinal_grupo(agora)
-    bot.reply_to(msg, "🧪 Teste enviado no grupo.")
+@bot.message_handler(commands=["recuperacao"])
+def recuperacao(msg):
+    enviar_recuperacao()
+    bot.reply_to(msg, "♻️ Aviso de recuperação enviado no grupo.")
 
 # ================= START =================
 print("🤖 Radar Rosa Bot ONLINE - Horário Brasília")
