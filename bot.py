@@ -45,6 +45,7 @@ def enviar_sinal_grupo(hora_rosa):
         "🌹 <b>ROSA 10x+ DETECTADO</b>\n\n"
         f"⏰ <b>Horário da rosa:</b> {hora_rosa}\n"
         "ENTRAR NO MINUTO"
+        
         "1 MINUTO ANTES E 1 MINUTOS DEPOIS"
         "🎯 <b>ZONAS QUENTES:</b>\n"
         f"🎯 {zonas[0]}\n"
