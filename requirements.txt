@@ -1,4 +1,4 @@
 pyTelegramBotAPI
+playwright
 pytz
 requests
-playwright
