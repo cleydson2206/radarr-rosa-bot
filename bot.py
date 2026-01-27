@@ -6,9 +6,10 @@ import pytz
 # ================= CONFIGURAÇÕES =================
 
 TOKEN = "8316037466:AAFin8vm0gZ-3GtysKHIg2kSSNp2znHPAUE"
+
 GROUP_ID = -1003690946411
 
-LINK_APOSTA_MAX = "https://apostamax.com"
+LINK_APOSTA_MAX = "https://apostamax.bet.br/games/spribe/aviator"
 LINK_TIP_MINER = "https://tipminer.com"
 
 bot = telebot.TeleBot(TOKEN, parse_mode="HTML")
@@ -17,14 +18,17 @@ TZ_BR = pytz.timezone("America/Sao_Paulo")
 
 # ================= FUNÇÕES =================
 
-def agora_br():
+def agora_brasilia():
     return datetime.now(TZ_BR)
+
+def formatar_hora(dt):
+    return dt.strftime("%H:%M")
 
 def somar_minutos(hora_base, minutos):
     h, m = map(int, hora_base.split(":"))
-    base = agora_br().replace(hour=h, minute=m, second=0)
+    base = agora_brasilia().replace(hour=h, minute=m, second=0)
     novo = base + timedelta(minutes=minutos)
-    return novo.strftime("%H:%M")
+    return formatar_hora(novo)
 
 def calcular_zonas(hora_rosa):
     return [
@@ -46,7 +50,7 @@ def teclado(hora):
 
 def enviar_sinal_grupo(hora_rosa):
     zonas = calcular_zonas(hora_rosa)
-    horario_analise = agora_br().strftime("%H:%M")
+    horario_analise = formatar_hora(agora_brasilia())
 
     mensagem = (
         "🌹 <b>ROSA 10x+ DETECTADO</b>\n\n"
@@ -75,34 +79,36 @@ def start(msg):
     bot.reply_to(
         msg,
         "🤖 <b>Radar Rosa Bot ATIVO</b>\n\n"
-        "📌 O sistema funciona de forma automática.\n"
-        "📡 Detectamos padrões que pagam ROSA.\n\n"
-        "🧪 Teste manual:\n"
-        "<code>/rosa 1852</code>"
+        "Use o comando:\n"
+        "<code>/rosa 1852</code>\n\n"
+        "Formato: HHMM\n"
+        "📡 Leitura automática do Tip Miner ativa",
     )
 
 @bot.message_handler(commands=["rosa"])
-def rosa(msg):
+def rosa_manual(msg):
     try:
         hora = msg.text.split()[1]
-        if len(hora) != 4:
+        if len(hora) != 4 or not hora.isdigit():
             raise ValueError
 
         hora_formatada = f"{hora[:2]}:{hora[2:]}"
         enviar_sinal_grupo(hora_formatada)
 
         bot.reply_to(msg, "✅ Sinal enviado no grupo.")
-
     except:
-        bot.reply_to(msg, "❌ Use corretamente:\n/rosa 1852")
+        bot.reply_to(
+            msg,
+            "❌ Use corretamente:\n<code>/rosa 1852</code>"
+        )
 
 @bot.message_handler(commands=["teste"])
 def teste(msg):
-    agora = agora_br().strftime("%H:%M")
+    agora = formatar_hora(agora_brasilia())
     enviar_sinal_grupo(agora)
     bot.reply_to(msg, "🧪 Teste enviado no grupo.")
 
 # ================= START =================
 
-print("🤖 Radar Rosa Bot ONLINE — Horário de Brasília")
-bot.infinity_polling()
+print("🤖 Radar Rosa Bot ONLINE — Horário Brasília")
+bot.infinity_polling(skip_pending=True)
