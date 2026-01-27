@@ -1,28 +1,12 @@
 FROM python:3.11-slim
 
-# Dependências do Chromium (Playwright)
-RUN apt-get update && apt-get install -y \
-    wget \
-    gnupg \
-    libnss3 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libxkbcommon0 \
-    libxcomposite1 \
-    libxrandr2 \
-    libgbm1 \
-    libasound2 \
-    libpangocairo-1.0-0 \
-    libgtk-3-0 \
-    fonts-liberation \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
-COPY . .
 
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
 RUN playwright install chromium
 
-CMD ["python", "collector.py"]
+COPY . .
+
+CMD ["python", "bot.py"]
