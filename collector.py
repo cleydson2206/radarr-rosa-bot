@@ -1,41 +1,23 @@
-import os
 import time
-import sys
 from datetime import datetime
 import pytz
-
-# ==============================
-# CONFIGURAÇÕES
-# ==============================
 
 TZ_BR = pytz.timezone("America/Sao_Paulo")
 
 def agora_br():
-    return datetime.now(TZ_BR).strftime("%d/%m/%Y %H:%M:%S")
+    return datetime.now(TZ_BR).strftime("%H:%M:%S")
 
-# ==============================
-# INÍCIO DO COLETOR
-# ==============================
+print("🟢 Collector iniciado com sucesso")
 
-print("🚀 Collector iniciado")
-print(f"🕒 Horário BR: {agora_br()}")
+while True:
+    try:
+        print(f"📡 Coletando dados... {agora_br()}")
 
-# Simula coleta de dados
-try:
-    for i in range(1, 6):
-        print(f"📡 Coletando dados... passo {i}/5")
-        time.sleep(2)
+        # 👉 AQUI entra sua lógica real de coleta
+        # ex: leitura de API, scraping, cálculo, etc
 
-    print("✅ Coleta finalizada com sucesso")
+        time.sleep(60)  # roda a cada 60 segundos
 
-except Exception as e:
-    print("❌ Erro no collector:")
-    print(e)
-    sys.exit(1)
-
-# ==============================
-# FINALIZAÇÃO
-# ==============================
-
-print("🏁 Collector encerrado normalmente")
-sys.exit(0)
+    except Exception as e:
+        print("❌ Erro no collector:", e)
+        time.sleep(10)
