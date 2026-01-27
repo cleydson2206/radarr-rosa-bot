@@ -4,79 +4,83 @@ import pytz
 import time
 import requests
 
-# ================= CONFIGURAÇÕES =================
+# ================== CONFIGURAÇÕES ==================
 
 BOT_TOKEN = "8316037466:AAFin8vm0gZ-3GtysKHIg2kSSNp2znHPAUE"
-CHAT_ID = -1003690946411  # grupo ou bot que recebe /rosa
+CHAT_ID = -1003690946411  # ID do grupo
 
 URL_TIP_MINER = "https://tipminer.com"
-
 TZ_BR = pytz.timezone("America/Sao_Paulo")
 
-# evita disparos duplicados
-ultimo_horario_enviado = None
+# Controle para não duplicar sinais
+historico_rosas = []
+ULTIMO_ENVIO = None
 
-
-# ================= FUNÇÕES =================
+# ================== FUNÇÕES ==================
 
 def agora_br():
-    return datetime.now(TZ_BR)
+    return datetime.now(TZ_BR).strftime("%H:%M")
 
 def enviar_para_bot(hora_rosa):
-    global ultimo_horario_enviado
+    global ULTIMO_ENVIO
 
-    if hora_rosa == ultimo_horario_enviado:
+    if hora_rosa == ULTIMO_ENVIO:
         return
 
-    ultimo_horario_enviado = hora_rosa
-
-    comando = f"/rosa {hora_rosa.replace(':','')}"
+    texto = f"/rosa {hora_rosa.replace(':','')}"
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {
         "chat_id": CHAT_ID,
-        "text": comando
+        "text": texto
     }
 
-    requests.post(url, data=payload)
-    print(f"🚀 Rosa enviada ao bot: {hora_rosa}")
+    try:
+        requests.post(url, data=payload, timeout=10)
+        print(f"📤 Enviado para o bot: {texto}")
+        ULTIMO_ENVIO = hora_rosa
+    except Exception as e:
+        print("❌ Erro ao enviar para o bot:", e)
 
+# ================== COLETOR ==================
 
-# ================= COLETOR =================
-
-def iniciar_coletor():
-    print("🟢 Coletor Radar Rosa iniciado")
+def iniciar_coleta():
+    print("🟣 Coletor Tip Miner iniciado (modo headless)")
+    print("🕒 Horário Brasília:", agora_br())
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True,
-            args=["--no-sandbox", "--disable-dev-shm-usage"]
-        )
+        browser = p.chromium.launch(headless=True)
         page = browser.new_page()
+
         page.goto(URL_TIP_MINER, timeout=60000)
+        time.sleep(10)  # tempo para carregar tabela
 
         while True:
             try:
-                # ⚠️ SIMULAÇÃO BASE
-                # Aqui depois você substitui pela leitura real do Tip Miner
+                # 🔴 AJUSTE AQUI SE O TIP MINER MUDAR O HTML
+                elementos = page.query_selector_all("div.cell")
 
-                agora = agora_br()
-                segundo = agora.second
+                for el in elementos:
+                    texto = el.inner_text().strip()
 
-                # exemplo: simula rosa quando segundo == 0
-                if segundo == 0:
-                    hora_rosa = agora.strftime("%H:%M")
-                    enviar_para_bot(hora_rosa)
-                    time.sleep(60)  # evita loop duplo
+                    if "10" in texto and "x" in texto.lower():
+                        horario = agora_br()
 
-                time.sleep(1)
+                        if horario not in historico_rosas:
+                            historico_rosas.append(horario)
+
+                            if len(historico_rosas) >= 2:
+                                penultima_rosa = historico_rosas[-2]
+                                print("🌹 Rosa detectada:", penultima_rosa)
+                                enviar_para_bot(penultima_rosa)
+
+                time.sleep(30)
 
             except Exception as e:
-                print("❌ Erro no coletor:", e)
-                time.sleep(5)
+                print("⚠️ Erro no loop, tentando novamente:", e)
+                time.sleep(15)
 
-
-# ================= START =================
+# ================== START ==================
 
 if __name__ == "__main__":
-    iniciar_coletor()
+    iniciar_coleta()
