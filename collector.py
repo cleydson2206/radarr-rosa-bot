@@ -1,65 +1,65 @@
-from playwright.sync_api import sync_playwright
-from datetime import datetime
-import pytz
+import os
 import time
 import requests
+from datetime import datetime
+import pytz
+from playwright.sync_api import sync_playwright
 
-# ================= CONFIG =================
-BOT_TOKEN = "8316037466:AAFin8vm0gZ-3GtysKHIg2kSSNp2znHPAUE"
-CHAT_ID = -1003690946411  # MESMO ID do grupo
-URL_TIP_MINER = "https://tipminer.com"
+BOT_TOKEN = os.getenv("8316037466:AAFin8vm0gZ-3GtysKHIg2kSSNp2znHPAUE")
+GROUP_ID = int(os.getenv("-1003690946411"))
+
 TZ_BR = pytz.timezone("America/Sao_Paulo")
+TIPMINER_URL = "https://tipminer.com"
 
 ULTIMO_ENVIO = None
-# =========================================
 
-def hora_br():
+def agora_br():
     return datetime.now(TZ_BR).strftime("%H:%M")
 
-def enviar_para_telegram(hora_rosa):
-    global ULTIMO_ENVIO
-
-    if hora_rosa == ULTIMO_ENVIO:
-        return
-
-    texto = f"🌹 <b>ROSA DETECTADA</b>\n⏰ <b>{hora_rosa.replace(':','')}</b>"
-
+def enviar_telegram(msg):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {
-        "chat_id": CHAT_ID,
-        "text": texto,
+        "chat_id": GROUP_ID,
+        "text": msg,
         "parse_mode": "HTML"
     }
+    requests.post(url, data=payload, timeout=10)
 
-    try:
-        requests.post(url, data=payload, timeout=10)
-        print(f"✅ Rosa enviada: {hora_rosa}")
-        ULTIMO_ENVIO = hora_rosa
-    except Exception as e:
-        print("❌ Erro ao enviar:", e)
+def detectar_rosa(valor):
+    return valor >= 10.0  # ajuste se quiser
 
-def monitorar():
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.goto(URL_TIP_MINER, timeout=60000)
+print("🟣 Worker iniciado")
 
-        print("👀 Monitorando TipMiner...")
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True)
+    page = browser.new_page()
+    page.goto(TIPMINER_URL, timeout=60000)
 
-        while True:
-            try:
-                # ⚠️ EXEMPLO (AJUSTE SELETOR SE NECESSÁRIO)
-                rosa = page.locator(".pink").first
+    while True:
+        try:
+            page.wait_for_selector("div", timeout=10000)
 
-                if rosa:
-                    hora = hora_br()
-                    enviar_para_telegram(hora)
+            textos = page.eval_on_selector_all(
+                "div",
+                "els => els.map(e => e.innerText)"
+            )
 
-                time.sleep(15)
+            for t in textos:
+                if "x" in t:
+                    try:
+                        valor = float(t.replace("x", "").replace(",", "."))
+                        if detectar_rosa(valor):
+                            hora = agora_br()
+                            global ULTIMO_ENVIO
+                            if hora != ULTIMO_ENVIO:
+                                enviar_telegram(
+                                    f"🌹 <b>ROSA DETECTADA</b>\n"
+                                    f"🎯 Multiplicador: <b>{valor}x</b>\n"
+                                    f"⏰ Entrada: <b>{hora}</b>"
+                                )
+                                ULTIMO_ENVIO = hora
+            time.sleep(5)
 
-            except Exception as e:
-                print("Erro:", e)
-                time.sleep(10)
-
-if __name__ == "__main__":
-    monitorar()
+        except Exception as e:
+            print("Erro:", e)
+            time.sleep(5)
